@@ -1,5 +1,5 @@
 import sys
-sys.path.append(r"C:\Users\silas\PycharmProjects\OFP\Fibonacci")
+sys.path.append(r"/Funktionales_programmieren/Fibonacci")
 from Aufgabe_7 import fibonacci_generator
 
 def squares_of_even_fibonacci(n: int) -> int:
