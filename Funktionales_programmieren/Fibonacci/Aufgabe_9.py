@@ -4,4 +4,4 @@ def fibonacci_recursiv_9(n, cur = 0, prev = 1):
     else:
         return fibonacci_recursiv_9(n-1, cur+prev, cur)
 
-print(fibonacci_recursiv_9(10000))
+print(fibonacci_recursiv_9(100))
