@@ -28,18 +28,29 @@ class Konto:
         print(f"Sie haben ein {self.kontotyp} eröffnet. Ihr {self.kontotyp} hat die Kontonummer: {self.kontonummer}")
 
     def bareinzahlung(self, betrag):
-        print(f"Vor der Einzahlung: {self.saldo} CHF")
-        if betrag < 0:
-            print(f"\033[91mFehler: Der Betrag muss positiv sein.\033[0m")
-            return
-        self.saldo += betrag  # Hier wird der Saldo des Sparkontos aktualisiert
+        if self.kontonummer not in Konto.konten or self.aktiv == False:
+            print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
+            sys.exit()
+        elif betrag < 0:
+            print(
+                f"\033[91mFehler: Der Betrag muss positiv sein. Sie haben den Betrag {betrag} gewählt, welcher nicht zulässig ist.\033[0m")
+            sys.exit()
 
-        # Gebühren berechnen
-        self.Gebühren(betrag)
+        else:
+            # Betrag zur Saldo hinzufügen
+            self.saldo += betrag
 
-        buchung = Buchung(betrag, datetime.datetime.now(), "Bareinzahlung")
-        self.buchungen.append(buchung)
-        print(f"Nach der Einzahlung: {self.saldo} CHF")
+            # Die Änderung im Konto-Dictionary speichern
+            Konto.konten[self.kontonummer]['Saldo'] = self.saldo
+
+            # Buchung der Bareinzahlung
+            buchung = Buchung(betrag, datetime.datetime.now(), "Bareinzahlung")
+            self.buchungen.append(buchung)
+
+            # Auch im Dictionary Buchung hinzufügen
+            Konto.konten[self.kontonummer]['Buchungen'] = self.buchungen
+
+            print("Die Bareinzahlung war erfolgreich.")
 
     def Kontoübertrag(self, betrag, ziel_kontonummer, verwendungszweck=""):
         if self.kontonummer not in Konto.konten or not self.aktiv:
@@ -49,7 +60,7 @@ class Konto:
             print(
                 f"\033[91mFehler: Die Zielkontonummer {ziel_kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
             return
-        if self.kann_abbuchen(betrag):
+        if not self.kann_abbuchen(betrag):
             print(
                 f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: {self.saldo}.\033[0m")
             return
@@ -59,6 +70,7 @@ class Konto:
 
         # Betrag übertragen
         self.saldo -= betrag
+        Konto.konten[self.kontonummer]['Saldo'] = self.saldo
         Konto.konten[ziel_kontonummer]['Saldo'] += betrag
 
         # Buchungen hinzufügen
@@ -72,9 +84,9 @@ class Konto:
     def Gebühren(self, betrag):
         gebühren_prozent = 0.05  # Standardgebühr: 5%
 
+        # Gebühren nur berechnen, wenn Betrag > 0
         if betrag <= 0:
             return
-
         gebührenbetrag = betrag * gebühren_prozent
         gebührenkonto_nr = 0  # Gebührenkonto hat immer Kontonummer 0
 
@@ -82,12 +94,12 @@ class Konto:
             print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
             return
 
-        # Überprüfen, ob der Saldo für die Gebühren ausreicht
+        # Verhindern, dass Gebühren mehrmals abgezogen werden
         if not self.kann_abbuchen(gebührenbetrag + betrag):
             print(f"\033[91mFehler: Gebühren können nicht abgebucht werden. Saldo unzureichend.\033[0m")
             return
 
-        # Gebühren abziehen
+        # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebührenkonto
         self.saldo -= gebührenbetrag
         Konto.konten[gebührenkonto_nr]['Saldo'] += gebührenbetrag
 
@@ -116,7 +128,9 @@ class Konto:
 
     @classmethod
     def alle_konten(cls):
-        print(f"{cls.konten}")
+        for kontonummer, konto_info in cls.konten.items():
+            print(
+                f"Kontonummer: {kontonummer}, Kontotyp: {konto_info['Kontotyp']}, Saldo: {konto_info['Saldo']}, Aktiv: {konto_info['aktiv']}")
 
     @classmethod
     def initialisiere_festgelegtes_konto(cls):
