@@ -5,22 +5,21 @@ from Bank import Bank
 from Buchung import Buchung
 
 # Instanziierung von Objekten
-jugendkonto = Jugendkonto()
-sparkonto = Sparkonto()
-
+privatkonto = Privatkonto()
+Jugendkonto = Jugendkonto()
 # Bareinzahlung durchführen
 print("Bareinzahlung")
-sparkonto.bareinzahlung(1000)
-sparkonto.abfrage_kontostand()
+privatkonto.bareinzahlung(1000)
+Konto.alle_konten()
 
 # Kontoübertrag durchführen
-sparkonto.Kontoübertrag(200, 1, "Testüberweisung")
+privatkonto.Kontoübertrag(200, 2, "Testüberweisung")
 
 # Abfrage des Kontostands des Gebührenkontos (Kontonummer 0)
 print(Konto.konten[0]['Saldo'])  # Gebührenkonto
 
 # Buchungsabfrage
-sparkonto.Buchungsabfrage(1)  # Abfrage der letzten Buchung auf Sparkonto
+privatkonto.Buchungsabfrage(1)  # Abfrage der letzten Buchung auf Sparkonto
 
 # Alle Konten anzeigen
 Konto.alle_konten()  # Zeigt alle Konten an

@@ -28,18 +28,29 @@ class Konto:
         print(f"Sie haben ein {self.kontotyp} eröffnet. Ihr {self.kontotyp} hat die Kontonummer: {self.kontonummer}")
 
     def bareinzahlung(self, betrag):
-        if self.kontonummer not in Konto.konten or not self.aktiv:
+        if self.kontonummer not in Konto.konten or self.aktiv == False:
             print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
             sys.exit()
-        elif betrag <= 0:
+        elif betrag < 0:
             print(
                 f"\033[91mFehler: Der Betrag muss positiv sein. Sie haben den Betrag {betrag} gewählt, welcher nicht zulässig ist.\033[0m")
             sys.exit()
 
-        self.saldo += betrag
-        buchung = Buchung(betrag, datetime.datetime.now(), "Bareinzahlung")
-        self.buchungen.append(buchung)
-        print("Die Bareinzahlung war erfolgreich.")
+        else:
+            # Betrag zur Saldo hinzufügen
+            self.saldo += betrag
+
+            # Die Änderung im Konto-Dictionary speichern
+            Konto.konten[self.kontonummer]['Saldo'] = self.saldo
+
+            # Buchung der Bareinzahlung
+            buchung = Buchung(betrag, datetime.datetime.now(), "Bareinzahlung")
+            self.buchungen.append(buchung)
+
+            # Auch im Dictionary Buchung hinzufügen
+            Konto.konten[self.kontonummer]['Buchungen'] = self.buchungen
+
+            print("Die Bareinzahlung war erfolgreich.")
 
     def Kontoübertrag(self, betrag, ziel_kontonummer, verwendungszweck=""):
         if self.kontonummer not in Konto.konten or not self.aktiv:
@@ -59,6 +70,7 @@ class Konto:
 
         # Betrag übertragen
         self.saldo -= betrag
+        Konto.konten[self.kontonummer]['Saldo'] = self.saldo
         Konto.konten[ziel_kontonummer]['Saldo'] += betrag
 
         # Buchungen hinzufügen
@@ -116,7 +128,9 @@ class Konto:
 
     @classmethod
     def alle_konten(cls):
-        print(f"{cls.konten}")
+        for kontonummer, konto_info in cls.konten.items():
+            print(
+                f"Kontonummer: {kontonummer}, Kontotyp: {konto_info['Kontotyp']}, Saldo: {konto_info['Saldo']}, Aktiv: {konto_info['aktiv']}")
 
     @classmethod
     def initialisiere_festgelegtes_konto(cls):

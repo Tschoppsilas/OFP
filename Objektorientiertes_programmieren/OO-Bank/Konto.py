@@ -28,18 +28,18 @@ class Konto:
         print(f"Sie haben ein {self.kontotyp} eröffnet. Ihr {self.kontotyp} hat die Kontonummer: {self.kontonummer}")
 
     def bareinzahlung(self, betrag):
-        if self.kontonummer not in Konto.konten or not self.aktiv:
-            print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
-            sys.exit()
-        elif betrag <= 0:
-            print(
-                f"\033[91mFehler: Der Betrag muss positiv sein. Sie haben den Betrag {betrag} gewählt, welcher nicht zulässig ist.\033[0m")
-            sys.exit()
+        print(f"Vor der Einzahlung: {self.saldo} CHF")
+        if betrag < 0:
+            print(f"\033[91mFehler: Der Betrag muss positiv sein.\033[0m")
+            return
+        self.saldo += betrag  # Hier wird der Saldo des Sparkontos aktualisiert
 
-        self.saldo += betrag
+        # Gebühren berechnen
+        self.Gebühren(betrag)
+
         buchung = Buchung(betrag, datetime.datetime.now(), "Bareinzahlung")
         self.buchungen.append(buchung)
-        print("Die Bareinzahlung war erfolgreich.")
+        print(f"Nach der Einzahlung: {self.saldo} CHF")
 
     def Kontoübertrag(self, betrag, ziel_kontonummer, verwendungszweck=""):
         if self.kontonummer not in Konto.konten or not self.aktiv:
@@ -49,7 +49,7 @@ class Konto:
             print(
                 f"\033[91mFehler: Die Zielkontonummer {ziel_kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
             return
-        if not self.kann_abbuchen(betrag):
+        if self.kann_abbuchen(betrag):
             print(
                 f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: {self.saldo}.\033[0m")
             return
@@ -72,9 +72,9 @@ class Konto:
     def Gebühren(self, betrag):
         gebühren_prozent = 0.05  # Standardgebühr: 5%
 
-        # Gebühren nur berechnen, wenn Betrag > 0
         if betrag <= 0:
             return
+
         gebührenbetrag = betrag * gebühren_prozent
         gebührenkonto_nr = 0  # Gebührenkonto hat immer Kontonummer 0
 
@@ -82,12 +82,12 @@ class Konto:
             print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
             return
 
-        # Verhindern, dass Gebühren mehrmals abgezogen werden
+        # Überprüfen, ob der Saldo für die Gebühren ausreicht
         if not self.kann_abbuchen(gebührenbetrag + betrag):
             print(f"\033[91mFehler: Gebühren können nicht abgebucht werden. Saldo unzureichend.\033[0m")
             return
 
-        # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebührenkonto
+        # Gebühren abziehen
         self.saldo -= gebührenbetrag
         Konto.konten[gebührenkonto_nr]['Saldo'] += gebührenbetrag
 
