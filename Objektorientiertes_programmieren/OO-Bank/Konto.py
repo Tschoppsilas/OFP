@@ -82,6 +82,8 @@ class Konto:
         print(f"Übertrag von {betrag} CHF von Konto {self.kontonummer} auf Konto {ziel_kontonummer} abgeschlossen.")
 
     def Gebühren(self, betrag):
+        if self.kontotyp != "Privatkonto":
+            return
         gebühren_prozent = 0.05  # Standardgebühr: 5%
 
         # Gebühren nur berechnen, wenn Betrag > 0
@@ -171,7 +173,7 @@ class Sparkonto(Konto):
 class Gebührenkonto(Konto):
     def __init__(self):
         self.kontonummer = 0  # Feste Kontonummer zuweisen
-        self.kontotyp = "Gebührenkonto"
+        self.kontotyp = "Gebührenkonto und Zinskonto"
         self.saldo = 0
         self.buchungen = []
         self.aktiv = True
