@@ -1,6 +1,6 @@
 import datetime
 import sys
-from Konto import Konto
+from Test import Konto
 from Buchung import Buchung
 class Bank:
 
@@ -14,18 +14,16 @@ class Bank:
             print(f"\033[91mFehler: Die Kontonummer {kontonummer} existiert nicht.\033[0m")
             sys.exit()
 
-    @classmethod
-    def konto_schliessen(cls, kontonummer):
+    def Konto_schliessen(self, kontonummer):
+        # Überprüfen, ob das Konto existiert
         if kontonummer in Konto.konten:
-            konto = Konto.konten[kontonummer]
-            if konto['Saldo'] != 0:
-                print(f"\033[91mFehler: Konto kann nicht geschlossen werden, da das Konto noch einen Restbetrag "
-                      f"von {konto['Saldo']} CHF hat.\033[0m")
-                sys.exit()
+            # Überprüfen, ob der Kontostand 0 ist
+            if Konto.konten[kontonummer]['Saldo'] == 0:
+                # Konto auf inaktiv setzen
+                Konto.konten[kontonummer]['aktiv'] = False
+                print(f"Das Konto {kontonummer} wurde erfolgreich geschlossen.")
             else:
-                konto['aktiv'] = False
-                print(f"Das Konto {kontonummer} wurde erfolgreich geschlossen")
+                print(f"\033[91mFehler: Konto kann nicht geschlossen werden, da der Kontostand {Konto.konten[kontonummer]['Saldo']} CHF beträgt.\033[0m")
         else:
             print(f"\033[91mFehler: Die Kontonummer {kontonummer} existiert nicht.\033[0m")
-            sys.exit()
 

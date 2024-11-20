@@ -24,49 +24,45 @@ class Konto:
             'aktiv': self.aktiv
         }
 
-    def Konto_eröffnen(self):
+    def konto_eröffnen(self):
         print(f"Sie haben ein {self.kontotyp} eröffnet. Ihr {self.kontotyp} hat die Kontonummer: {self.kontonummer}")
 
+    @staticmethod
+    def _Fehlermeldung(kontonummer, betrag=0):
+        if kontonummer not in Konto.konten or Konto.konten[kontonummer]['aktiv'] == False:
+            print(f"\033[91mFehler: Die Kontonummer {kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
+            sys.exit()
+        if betrag < 0:
+            print(f"\033[91mFehler: Der Betrag muss positiv sein. Sie haben den Betrag {betrag} gewählt, welcher nicht "
+                  f"zulässig ist.\033[0m")
+            sys.exit()
+
     def bareinzahlung(self, betrag):
-        if self.kontonummer not in Konto.konten or self.aktiv == False:
-            print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
-            sys.exit()
-        elif betrag < 0:
-            print(
-                f"\033[91mFehler: Der Betrag muss positiv sein. Sie haben den Betrag {betrag} gewählt, welcher nicht zulässig ist.\033[0m")
-            sys.exit()
+        self._Fehlermeldung(self.kontonummer, betrag)
+        self._aktualisiere_saldo(betrag)
+        self._buchung_hinzufuegen(betrag, "Bareinzahlung")
+        print("Die Bareinzahlung war erfolgreich.")
 
-        else:
-            # Betrag zur Saldo hinzufügen
-            self.saldo += betrag
-
-            # Die Änderung im Konto-Dictionary speichern
-            Konto.konten[self.kontonummer]['Saldo'] = self.saldo
-
-            # Buchung der Bareinzahlung
-            buchung = Buchung(betrag, datetime.datetime.now(), "Bareinzahlung")
-            self.buchungen.append(buchung)
-
-            # Auch im Dictionary Buchung hinzufügen
-            Konto.konten[self.kontonummer]['Buchungen'] = self.buchungen
-
-            print("Die Bareinzahlung war erfolgreich.")
-
-    def Kontoübertrag(self, betrag, ziel_kontonummer, verwendungszweck=""):
-        if self.kontonummer not in Konto.konten or not self.aktiv:
-            print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
-            return
-        if ziel_kontonummer not in Konto.konten or not Konto.konten[ziel_kontonummer]['aktiv']:
-            print(
-                f"\033[91mFehler: Die Zielkontonummer {ziel_kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
-            return
+    def abhebung(self, betrag):
+        self._Fehlermeldung(self.kontonummer, betrag)
         if not self.kann_abbuchen(betrag):
-            print(
-                f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: {self.saldo}.\033[0m")
-            return
+            print(f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgehoben werden. Maximales Guthaben: "
+                  f"{self.saldo}.\033[0m")
+            sys.exit()
+        self._aktualisiere_saldo(-betrag)
+        self._buchung_hinzufuegen(-betrag, "Abhebung")
+        print(f"Der Betrag von {betrag} CHF wurde erfolgreich abgehoben.")
+
+    def kontoübertrag(self, betrag, ziel_kontonummer, verwendungszweck=""):
+        self._Fehlermeldung(self.kontonummer, betrag)
+        self._Fehlermeldung(ziel_kontonummer, betrag)
+        if not self.kann_abbuchen(betrag):
+            print(f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: "
+                  f"{self.saldo}.\033[0m")
+            sys.exit()
 
         # Gebühren berechnen und abbuchen
-        self.Gebühren(betrag)
+        self.gebuehren(betrag)
 
         # Betrag übertragen
         self.saldo -= betrag
@@ -74,65 +70,61 @@ class Konto:
         Konto.konten[ziel_kontonummer]['Saldo'] += betrag
 
         # Buchungen hinzufügen
-        buchung = Buchung(betrag, datetime.datetime.now(), verwendungszweck, ziel_kontonummer)
-        self.buchungen.append(buchung)
-        buchung = Buchung(betrag, datetime.datetime.now(), verwendungszweck, self.kontonummer)
-        Konto.konten[ziel_kontonummer]['Buchungen'].append(buchung)
-
+        self._buchung_hinzufuegen(betrag, verwendungszweck, ziel_kontonummer)
         print(f"Übertrag von {betrag} CHF von Konto {self.kontonummer} auf Konto {ziel_kontonummer} abgeschlossen.")
 
-    def Gebühren(self, betrag):
+    def gebuehren(self, betrag):
         if self.kontotyp != "Privatkonto":
             return
-        gebühren_prozent = 0.05  # Standardgebühr: 5%
+        gebuehren_prozent = 0.05  # Standardgebühr: 5%
 
         # Gebühren nur berechnen, wenn Betrag > 0
         if betrag <= 0:
             return
-        gebührenbetrag = betrag * gebühren_prozent
-        gebührenkonto_nr = 0  # Gebührenkonto hat immer Kontonummer 0
-
-        if self.kontonummer not in Konto.konten or not self.aktiv:
-            print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
-            return
+        gebuehrenbetrag = betrag * gebuehren_prozent
+        gebuehrenkonto_nr = 0  # Gebührenkonto hat immer Kontonummer 0
 
         # Verhindern, dass Gebühren mehrmals abgezogen werden
-        if not self.kann_abbuchen(gebührenbetrag + betrag):
+        if not self.kann_abbuchen(gebuehrenbetrag + betrag):
             print(f"\033[91mFehler: Gebühren können nicht abgebucht werden. Saldo unzureichend.\033[0m")
             return
 
-        # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebührenkonto
-        self.saldo -= gebührenbetrag
-        Konto.konten[gebührenkonto_nr]['Saldo'] += gebührenbetrag
+        # Gebühren abbuchen und auf das Gebührenkonto übertragen
+        self.saldo -= gebuehrenbetrag
+        Konto.konten[gebuehrenkonto_nr]['Saldo'] += gebuehrenbetrag
 
         # Gebühr buchen
-        buchung = Buchung(gebührenbetrag, datetime.datetime.now(), f"Gebühren für Konto {self.kontonummer}")
+        self._buchung_hinzufuegen(gebuehrenbetrag, f"Gebühren für Konto {self.kontonummer}")
+
+        print(f"Gebühren von {gebuehrenbetrag} CHF für Konto {self.kontonummer} wurden auf das Gebührenkonto übertragen.")
+
+    def _aktualisiere_saldo(self, betrag):
+        """Hilfsmethode zum Aktualisieren des Saldo"""
+        self.saldo += betrag
+        Konto.konten[self.kontonummer]['Saldo'] = self.saldo
+
+    def _buchung_hinzufuegen(self, betrag, verwendungszweck, empfaenger_konto=None):
+        """Hilfsmethode zum Hinzufügen einer Buchung"""
+        buchung = Buchung(betrag, datetime.datetime.now(), verwendungszweck, empfaenger_konto)
         self.buchungen.append(buchung)
-        print(
-            f"Gebühren von {gebührenbetrag} CHF für Konto {self.kontonummer} wurden auf das Gebührenkonto übertragen.")
+        Konto.konten[self.kontonummer]['Buchungen'] = self.buchungen
 
     def abfrage_kontostand(self):
-        if self.kontonummer not in Konto.konten or not self.aktiv:
-            print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
-            sys.exit()
-        else:
-            print(f"Ihr Saldo beträgt: {self.saldo} CHF")
+        self._Fehlermeldung(self.kontonummer)
+        print(f"Ihr Saldo beträgt: {self.saldo} CHF")
 
-    def Buchungsabfrage(self, anz_letzte_buchungen=1):
-        if self.kontonummer in self.konten:
-            buchungen = self.buchungen[-anz_letzte_buchungen:]
-            for buchung in buchungen:
-                print(
-                    f"Betrag: {buchung.betrag}, Datum: {buchung.datum}, Verwendungszweck: {buchung.verwendungszweck}, Übertragskontonummer: {buchung.empfänger_Konto}")
-        else:
-            print(f"\033[91mFehler: Die Kontonummer {self.kontonummer} existiert nicht.\033[0m")
-            sys.exit()
+    def buchungsabfrage(self, anz_letzte_buchungen=1):
+        self._Fehlermeldung(self.kontonummer)
+        buchungen = self.buchungen[-anz_letzte_buchungen:]
+        for buchung in buchungen:
+            print(f"Betrag: {buchung.betrag}, Datum: {buchung.datum}, Verwendungszweck: {buchung.verwendungszweck}, "
+                  f"Übertragskontonummer: {buchung.empfänger_Konto}")
 
     @classmethod
     def alle_konten(cls):
         for kontonummer, konto_info in cls.konten.items():
-            print(
-                f"Kontonummer: {kontonummer}, Kontotyp: {konto_info['Kontotyp']}, Saldo: {konto_info['Saldo']}, Aktiv: {konto_info['aktiv']}")
+            print(f"Kontonummer: {kontonummer}, Kontotyp: {konto_info['Kontotyp']}, Saldo: {konto_info['Saldo']}, "
+                  f"Aktiv: {konto_info['aktiv']}")
 
     @classmethod
     def initialisiere_festgelegtes_konto(cls):
@@ -142,6 +134,15 @@ class Konto:
         else:
             print("Das Gebührenkonto wurde bereits initialisiert.")
 
+    def kann_abbuchen(self, betrag):
+        """
+        Diese Methode sollte in jedem Kontotyp spezifisch implementiert werden.
+        Sie prüft, ob der Betrag abgebucht werden kann (je nach Kontotyp).
+        """
+        raise NotImplementedError("Die Methode 'kann_abbuchen' muss in den abgeleiteten Klassen implementiert werden.")
+
+
+# Abgeleitete Klassen für die Kontotypen
 
 class Jugendkonto(Konto):
     def __init__(self):
@@ -152,8 +153,6 @@ class Jugendkonto(Konto):
 
 
 class Privatkonto(Konto):
-    __gebühren = 0.05
-
     def __init__(self, limit=1000):
         super().__init__("Privatkonto")
         self.limit = limit
@@ -163,27 +162,13 @@ class Privatkonto(Konto):
 
 
 class Sparkonto(Konto):
-    def __init__(self):
+    def __init__(self, zinssatz=0.02):
         super().__init__("Sparkonto")
+        self.zinssatz = zinssatz
 
     def kann_abbuchen(self, betrag):
         return self.saldo >= betrag
 
-
-class Gebührenkonto(Konto):
-    def __init__(self):
-        self.kontonummer = 0  # Feste Kontonummer zuweisen
-        self.kontotyp = "Gebührenkonto und Zinskonto"
-        self.saldo = 0
-        self.buchungen = []
-        self.aktiv = True
-        if self.kontonummer not in Konto.konten:
-            Konto.konten[self.kontonummer] = {
-                'Kontotyp': self.kontotyp,
-                'Saldo': self.saldo,
-                'Buchungen': self.buchungen,
-                'aktiv': self.aktiv
-            }
-
-
-Konto.initialisiere_festgelegtes_konto()
+    def zinsen_berechnen(self):
+        """Berechnet die Zinsen auf das Sparkonto und aktualisiert den Saldo."""
+        zinsen = self.saldo * self.zinss
