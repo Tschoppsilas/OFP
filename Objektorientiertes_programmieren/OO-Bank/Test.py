@@ -1,7 +1,6 @@
 import datetime
 from Buchung import Buchung
 
-
 class Konto:
     __letzte_kontonummer = 0  # Klassenvariable für die letzte vergebene Kontonummer
     konten = {}  # Klassenvariable für die Speicherung aller Konteninformationen
@@ -61,11 +60,10 @@ class Konto:
         if self._Fehlermeldungen(self.kontonummer, betrag) or  self._Fehlermeldungen(ziel_kontonummer, betrag):
             return
         if not self.kann_abbuchen(betrag):
-            print(f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: {self.saldo}.\033[0m")
             return
         if self.kontotyp == "Privatkonto":
             # Gebühren berechnen und abbuchen
-            self.Gebühren(betrag)
+            self.__Gebühren(betrag)
 
         # Betrag übertragen
         self.saldo -= betrag
@@ -75,26 +73,15 @@ class Konto:
         # Buchungen hinzufügen
         buchung = Buchung(betrag, datetime.datetime.now(), verwendungszweck, ziel_kontonummer)
         self.buchungen.append(buchung)
-        buchung = Buchung(betrag, datetime.datetime.now(), verwendungszweck, self.kontonummer)
+        buchung = Buchung(-betrag, datetime.datetime.now(), verwendungszweck, self.kontonummer)
         Konto.konten[ziel_kontonummer]['Buchungen'].append(buchung)
 
         print(f"Übertrag von {betrag} CHF von Konto {self.kontonummer} auf Konto {ziel_kontonummer} abgeschlossen.")
 
-    def Gebühren(self, betrag):
-        if self.kontotyp != "Privatkonto":
-            return
-        gebühren_prozent = 0.05  # Standardgebühr: 5%
-
-        # Gebühren nur berechnen, wenn Betrag > 0
-        if betrag <= 0:
-            return
-        gebührenbetrag = betrag * gebühren_prozent
+    def __Gebühren(self, betrag):
+        __gebühren_prozent = 0.05  # Standardgebühr: 5%
+        gebührenbetrag = betrag * __gebühren_prozent
         gebührenkonto_nr = 0  # Gebühren_Zinskonto hat immer Kontonummer 0
-
-        # Verhindern, dass Gebühren mehrmals abgezogen werden
-        if not self.kann_abbuchen(gebührenbetrag + betrag):
-            print(f"\033[91mFehler: Gebühren können nicht abgebucht werden. Saldo unzureichend.\033[0m")
-            return
 
         # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebühren_Zinskonto
         self.saldo -= gebührenbetrag
@@ -103,8 +90,7 @@ class Konto:
         # Gebühr buchen
         buchung = Buchung(gebührenbetrag, datetime.datetime.now(), f"Gebühren für Konto {self.kontonummer}")
         self.buchungen.append(buchung)
-        print(
-            f"Gebühren von {gebührenbetrag} CHF für Konto {self.kontonummer} wurden auf das Gebühren_Zinskonto übertragen.")
+        print(f"Gebühren von {gebührenbetrag} CHF für Konto {self.kontonummer} wurden auf das Gebühren_Zinskonto übertragen.")
 
     def abfrage_kontostand(self):
         if self._Fehlermeldungen(self.kontonummer):
@@ -116,8 +102,7 @@ class Konto:
             return
         buchungen = self.buchungen[-anz_letzte_buchungen:]
         for buchung in buchungen:
-            print(
-                f"Betrag: {buchung.betrag}, Datum: {buchung.datum}, Verwendungszweck: {buchung.verwendungszweck}, Übertragskontonummer: {buchung.empfänger_Konto}")
+            print(f"Betrag: {buchung.betrag}, Datum: {buchung.datum}, Verwendungszweck: {buchung.verwendungszweck}, Übertragskontonummer: {buchung.empfänger_Konto}")
 
 
     @classmethod
@@ -133,13 +118,25 @@ class Konto:
         else:
             print("Das Gebühren_Zinskonto wurde bereits initialisiert.")
 
+    def kann_abbuchen(self, betrag):
+        if self.kontotyp == "Jugendkonto" or self.kontotyp == "Sparkonto" or self.kontotyp == "Gebühren_Zinskonto":
+            if self.saldo < betrag:
+                print(f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Der Maximale Betrag ist: {self.saldo} CHF.\033[0m")
+                return False
+            else:
+                return True
+        if self.kontotyp == "Privatkonto":
+            max_betrag = self.saldo + self.limit
+            if max_betrag < betrag:
+                print(f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Der Maximale Betrag ist: {max_betrag} CHF.\033[0m")
+                return False
+            else:
+                return True
+
 
 class Jugendkonto(Konto):
     def __init__(self):
         super().__init__("Jugendkonto")
-
-    def kann_abbuchen(self, betrag):
-        return self.saldo >= betrag
 
 
 class Privatkonto(Konto):
@@ -149,17 +146,12 @@ class Privatkonto(Konto):
         super().__init__("Privatkonto")
         self.limit = limit
 
-    def kann_abbuchen(self, betrag):
-        return self.saldo + self.limit >= betrag
-
 
 class Sparkonto(Konto):
     __zinssatz = 0.02
     def __init__(self):
         super().__init__("Sparkonto")
 
-    def kann_abbuchen(self, betrag):
-        return self.saldo >= betrag
 
     def Zinssatz(self, Zinssatz = __zinssatz):
         if Konto._Fehlermeldungen(self.kontonummer):
@@ -180,7 +172,7 @@ class Gebühren_Zinskonto(Konto):
     def __init__(self):
         self.kontonummer = 0  # Feste Kontonummer zuweisen
         self.kontotyp = "Gebühren- und Zinskonto"
-        self.saldo = 0
+        self.saldo = 10000 #Bank kann nicht von 0 starten
         self.buchungen = []
         self.aktiv = True
         if self.kontonummer not in Konto.konten:

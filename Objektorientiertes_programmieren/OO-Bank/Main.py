@@ -14,15 +14,15 @@ Bank = Bank()
 # Bareinzahlung durchführen
 print("Bareinzahlung auf Jugendkonto 2 und Privatkonto:")
 jugendkonto2.bareinzahlung(2000)  # Einzahlung auf Jugendkonto2
-privatkonto.bareinzahlung(1000)  # Einzahlung auf Privatkonto
+privatkonto.bareinzahlung(10)  # Einzahlung auf Privatkonto
 Sparkonto.bareinzahlung(1000)  # Einzahlung auf Sparkonto
 Konto.alle_konten()  # Alle Konten anzeigen
 
 # Kontoübertrag durchführen
 print("\nDurchführung von Kontoüberträgen:")
 jugendkonto2.Kontoübertrag(300, 1, "Testüberweisung")  # Übertrag von Jugendkonto2 auf Konto 2
-privatkonto.Kontoübertrag(800, 3, "Testüberweisung")  # Übertrag von Privatkonto auf Konto 2
-Sparkonto.Kontoübertrag(200, 3, "Testüberweisung")
+privatkonto.Kontoübertrag(8000, 3, "Testüberweisung")  # Übertrag von Privatkonto auf Konto 2
+Sparkonto.Kontoübertrag(2000, 3, "Testüberweisung")
 
 # Abfrage des Kontostands des Gebührenkontos (Kontonummer 0)
 print("\nAktueller Kontostand des Gebührenkontos (Kontonummer 0):")
