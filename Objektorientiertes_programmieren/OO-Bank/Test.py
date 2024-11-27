@@ -63,9 +63,9 @@ class Konto:
             print(
                 f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: {self.saldo}.\033[0m")
             sys.exit()
-
-        # Gebühren berechnen und abbuchen
-        self.Gebühren(betrag)
+        if self.kontotyp == "Privatkonto":
+            # Gebühren berechnen und abbuchen
+            self.Gebühren(betrag)
 
         # Betrag übertragen
         self.saldo -= betrag
@@ -89,14 +89,14 @@ class Konto:
         if betrag <= 0:
             return
         gebührenbetrag = betrag * gebühren_prozent
-        gebührenkonto_nr = 0  # Gebührenkonto hat immer Kontonummer 0
+        gebührenkonto_nr = 0  # Gebühren_Zinskonto hat immer Kontonummer 0
 
         # Verhindern, dass Gebühren mehrmals abgezogen werden
         if not self.kann_abbuchen(gebührenbetrag + betrag):
             print(f"\033[91mFehler: Gebühren können nicht abgebucht werden. Saldo unzureichend.\033[0m")
             return
 
-        # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebührenkonto
+        # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebühren_Zinskonto
         self.saldo -= gebührenbetrag
         Konto.konten[gebührenkonto_nr]['Saldo'] += gebührenbetrag
 
@@ -104,7 +104,7 @@ class Konto:
         buchung = Buchung(gebührenbetrag, datetime.datetime.now(), f"Gebühren für Konto {self.kontonummer}")
         self.buchungen.append(buchung)
         print(
-            f"Gebühren von {gebührenbetrag} CHF für Konto {self.kontonummer} wurden auf das Gebührenkonto übertragen.")
+            f"Gebühren von {gebührenbetrag} CHF für Konto {self.kontonummer} wurden auf das Gebühren_Zinskonto übertragen.")
 
     def abfrage_kontostand(self):
         self.__Fehlermeldungen(self.kontonummer)
@@ -117,6 +117,7 @@ class Konto:
             print(
                 f"Betrag: {buchung.betrag}, Datum: {buchung.datum}, Verwendungszweck: {buchung.verwendungszweck}, Übertragskontonummer: {buchung.empfänger_Konto}")
 
+
     @classmethod
     def alle_konten(cls):
         for kontonummer, konto_info in cls.konten.items():
@@ -126,10 +127,10 @@ class Konto:
     @classmethod
     def initialisiere_festgelegtes_konto(cls):
         if not cls.__festgelegtes_konto:  # Prüfen, ob das Konto bereits existiert
-            cls.__festgelegtes_konto = Gebührenkonto()
-            print(f"Das Gebührenkonto wurde erfolgreich initialisiert. Kontonummer: 0")
+            cls.__festgelegtes_konto = Gebühren_Zinskonto()
+            print(f"Das Gebühren_Zinskonto wurde erfolgreich initialisiert. Kontonummer: 0")
         else:
-            print("Das Gebührenkonto wurde bereits initialisiert.")
+            print("Das Gebühren_Zinskonto wurde bereits initialisiert.")
 
 
 class Jugendkonto(Konto):
@@ -152,22 +153,31 @@ class Privatkonto(Konto):
 
 
 class Sparkonto(Konto):
-    def __init__(self, zinssatz = 0.02):
+    __zinssatz = 0.02
+    def __init__(self):
         super().__init__("Sparkonto")
-        self.zinssatz = zinssatz
 
     def kann_abbuchen(self, betrag):
         return self.saldo >= betrag
 
+    def Zinssatz(self, Zinssatz = __zinssatz):
+        gebühren_Zins_konto_nr = 0  # Gebühren / Zinskonto hat immer Kontonummer 0
+        Zinsbetrag = self.saldo * Zinssatz
+        # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebühren_Zinskonto
+        self.saldo += Zinsbetrag
+        Konto.konten[self.kontonummer]['Saldo'] = self.saldo
+        Konto.konten[gebühren_Zins_konto_nr]['Saldo'] -= Zinsbetrag
+        # Gebühr buchen
+        buchung = Buchung(Zinsbetrag, datetime.datetime.now(), f"Zinsen für Konto {self.kontonummer}")
+        self.buchungen.append(buchung)
+        print(
+            f"Der Zinsbetrag von {Zinsbetrag} CHF, wurde für das Konto mit der Nummer: {self.kontonummer} verbucht.")
 
 
-
-
-
-class Gebührenkonto(Konto):
+class Gebühren_Zinskonto(Konto):
     def __init__(self):
         self.kontonummer = 0  # Feste Kontonummer zuweisen
-        self.kontotyp = "Gebührenkonto und Zinskonto"
+        self.kontotyp = "Gebühren- und Zinskonto"
         self.saldo = 0
         self.buchungen = []
         self.aktiv = True
