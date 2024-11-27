@@ -1,5 +1,4 @@
 import datetime
-import sys
 from Buchung import Buchung
 
 
@@ -29,18 +28,20 @@ class Konto:
         print(f"Sie haben ein {self.kontotyp} eröffnet. Ihr {self.kontotyp} hat die Kontonummer: {self.kontonummer}")
 
     @staticmethod
-    def __Fehlermeldungen(Kontonummer, betrag = 0):
+    def _Fehlermeldungen(Kontonummer, betrag = 0):
         if Kontonummer not in Konto.konten or Konto.konten[Kontonummer]['aktiv'] == False:
             print(f"\033[91mFehler: Die Kontonummer {Kontonummer} existiert nicht oder ist nicht aktiv.\033[0m")
-            sys.exit()
+            return True
         if betrag < 0:
-            print(
-                f"\033[91mFehler: Der Betrag muss positiv sein. Sie haben den Betrag {betrag} gewählt, welcher nicht zulässig ist.\033[0m")
-            sys.exit()
+            print(f"\033[91mFehler: Der Betrag muss positiv sein. Sie haben den Betrag {betrag} gewählt, welcher nicht zulässig ist.\033[0m")
+            return True
+        else:
+            return False
 
 
     def bareinzahlung(self, betrag):
-        self.__Fehlermeldungen(self.kontonummer, betrag)
+        if self._Fehlermeldungen(self.kontonummer, betrag):
+            return
         # Betrag zur Saldo hinzufügen
         self.saldo += betrag
 
@@ -57,15 +58,14 @@ class Konto:
         print("Die Bareinzahlung war erfolgreich.")
 
     def Kontoübertrag(self, betrag, ziel_kontonummer, verwendungszweck=""):
-        self.__Fehlermeldungen(self.kontonummer, betrag)
-        self.__Fehlermeldungen(ziel_kontonummer, betrag)
+        if self._Fehlermeldungen(self.kontonummer, betrag) or  self._Fehlermeldungen(ziel_kontonummer, betrag):
+            return
         if not self.kann_abbuchen(betrag):
-            print(
-                f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: {self.saldo}.\033[0m")
-            sys.exit()
-
-        # Gebühren berechnen und abbuchen
-        self.Gebühren(betrag)
+            print(f"\033[91mFehler: Der Betrag {betrag} CHF kann nicht abgebucht werden. Maximales Guthaben: {self.saldo}.\033[0m")
+            return
+        if self.kontotyp == "Privatkonto":
+            # Gebühren berechnen und abbuchen
+            self.Gebühren(betrag)
 
         # Betrag übertragen
         self.saldo -= betrag
@@ -107,26 +107,28 @@ class Konto:
             f"Gebühren von {gebührenbetrag} CHF für Konto {self.kontonummer} wurden auf das Gebühren_Zinskonto übertragen.")
 
     def abfrage_kontostand(self):
-        self.__Fehlermeldungen(self.kontonummer)
+        if self._Fehlermeldungen(self.kontonummer):
+            return
         print(f"Ihr Saldo beträgt: {self.saldo} CHF")
 
     def Buchungsabfrage(self, anz_letzte_buchungen=1):
-        self.__Fehlermeldungen(self.kontonummer)
+        if self._Fehlermeldungen(self.kontonummer):
+            return
         buchungen = self.buchungen[-anz_letzte_buchungen:]
         for buchung in buchungen:
             print(
                 f"Betrag: {buchung.betrag}, Datum: {buchung.datum}, Verwendungszweck: {buchung.verwendungszweck}, Übertragskontonummer: {buchung.empfänger_Konto}")
 
+
     @classmethod
     def alle_konten(cls):
         for kontonummer, konto_info in cls.konten.items():
-            print(
-                f"Kontonummer: {kontonummer}, Kontotyp: {konto_info['Kontotyp']}, Saldo: {konto_info['Saldo']}, Aktiv: {konto_info['aktiv']}")
+            print(f"Kontonummer: {kontonummer}, Kontotyp: {konto_info['Kontotyp']}, Saldo: {konto_info['Saldo']}, Aktiv: {konto_info['aktiv']}")
 
     @classmethod
     def initialisiere_festgelegtes_konto(cls):
         if not cls.__festgelegtes_konto:  # Prüfen, ob das Konto bereits existiert
-            cls.__festgelegtes_konto = Gebührenkonto()
+            cls.__festgelegtes_konto = Gebühren_Zinskonto()
             print(f"Das Gebühren_Zinskonto wurde erfolgreich initialisiert. Kontonummer: 0")
         else:
             print("Das Gebühren_Zinskonto wurde bereits initialisiert.")
@@ -152,22 +154,32 @@ class Privatkonto(Konto):
 
 
 class Sparkonto(Konto):
-    def __init__(self, zinssatz = 0.02):
+    __zinssatz = 0.02
+    def __init__(self):
         super().__init__("Sparkonto")
-        self.zinssatz = zinssatz
 
     def kann_abbuchen(self, betrag):
         return self.saldo >= betrag
 
+    def Zinssatz(self, Zinssatz = __zinssatz):
+        if Konto._Fehlermeldungen(self.kontonummer):
+            return
+        gebühren_Zins_konto_nr = 0  # Gebühren / Zinskonto hat immer Kontonummer 0
+        Zinsbetrag = self.saldo * Zinssatz
+        # Direktes Abbuchen des Gebührenbetrags und Übertragen auf das Gebühren_Zinskonto
+        self.saldo += Zinsbetrag
+        Konto.konten[self.kontonummer]['Saldo'] = self.saldo
+        Konto.konten[gebühren_Zins_konto_nr]['Saldo'] -= Zinsbetrag
+        # Gebühr buchen
+        buchung = Buchung(Zinsbetrag, datetime.datetime.now(), f"Zinsen für Konto {self.kontonummer}")
+        self.buchungen.append(buchung)
+        print(f"Der Zinsbetrag von {Zinsbetrag} CHF, wurde für das Konto mit der Nummer: {self.kontonummer} verbucht.")
 
 
-
-
-
-class Gebührenkonto(Konto):
+class Gebühren_Zinskonto(Konto):
     def __init__(self):
         self.kontonummer = 0  # Feste Kontonummer zuweisen
-        self.kontotyp = "Gebühren_Zinskonto und Zinskonto"
+        self.kontotyp = "Gebühren- und Zinskonto"
         self.saldo = 0
         self.buchungen = []
         self.aktiv = True
