@@ -1,100 +1,5 @@
-from Main import Bank, Jugendkonto, Privatkonto, Sparkonto
+from Main import Bank, Konto, Jugendkonto, Privatkonto, Sparkonto  # Hier importieren wir die Bank und Kontoklassen
 
-from datetime import datetime
-
-# Angenommen, die Bank- und Kontoklassen aus deinem ersten Programm sind hier importiert.
-
-# Konto eröffnen
-def konto_eröffnen(bank):
-    print("Konto eröffnen:")
-    vorname = input("Vorname: ")
-    nachname = input("Nachname: ")
-    geburtsdatum = input("Geburtsdatum (DD.MM.YYYY): ")
-    kontotyp = input("Kontotyp (Privatkonto, Jugendkonto, Sparkonto): ")
-
-    if kontotyp == "Privatkonto":
-        konto = bank.Konto_eröffnen(Privatkonto, vorname, nachname, geburtsdatum)
-    elif kontotyp == "Jugendkonto":
-        konto = bank.Konto_eröffnen(Jugendkonto, vorname, nachname, geburtsdatum)
-    elif kontotyp == "Sparkonto":
-        konto = bank.Konto_eröffnen(Sparkonto, vorname, nachname, geburtsdatum)
-    else:
-        print("Unbekannter Kontotyp.")
-        return
-
-    print(f"Konto mit der Nummer {konto.get_Konto_ID()} erfolgreich eröffnet!")
-
-# Bareinzahlung auf ein Konto
-def bareinzahlung(bank):
-    print("Bareinzahlung:")
-    konto_id = int(input("Kontonummer: "))
-    betrag = float(input("Einzahlungsbetrag: "))
-    try:
-        konto = bank.get_konto_info(konto_id)
-        konto.Bareinzahlung(betrag)
-        print(f"{betrag} auf Konto {konto_id} eingezahlt.")
-    except ValueError as e:
-        print(f"Fehler: {e}")
-
-# Buchung von einem Konto zu einem anderen
-def buchung(bank):
-    print("Buchung:")
-    start_konto_id = int(input("Start-Kontonummer: "))
-    ziel_konto_id = int(input("Ziel-Kontonummer: "))
-    betrag = float(input("Betrag: "))
-    zweck = input("Verwendungszweck (optional): ")
-    try:
-        bank.Buchung(start_konto_id, ziel_konto_id, betrag, zweck)
-        print("Buchung erfolgreich!")
-    except ValueError as e:
-        print(f"Fehler: {e}")
-
-# Kontostand abfragen
-def kontostand_abfragen(bank):
-    print("Kontostand abfragen:")
-    konto_id = int(input("Kontonummer: "))
-    try:
-        konto = bank.get_konto_info(konto_id)
-        print(f"Kontostand: {konto.get_saldo()} EUR")
-    except ValueError as e:
-        print(f"Fehler: {e}")
-
-# Letzte Buchungen eines Kontos abfragen
-def buchungsjournal_abfragen(bank):
-    print("Buchungsjournal abfragen:")
-    konto_id = int(input("Kontonummer: "))
-    max_einträge = input("Maximale Einträge (optional): ")
-    max_einträge = int(max_einträge) if max_einträge else None
-    try:
-        konto = bank.get_konto_info(konto_id)
-        journal = konto.get_journal(max_einträge)
-        for eintrag in journal:
-            print(eintrag)
-    except ValueError as e:
-        print(f"Fehler: {e}")
-
-# Letzte Buchungen der Bank abfragen
-def bankjournal_abfragen(bank):
-    print("Bankjournal abfragen:")
-    max_einträge = input("Maximale Einträge (optional): ")
-    max_einträge = int(max_einträge) if max_einträge else None
-    journal = bank.get_Bankjournal(max_einträge)
-    for eintrag in journal:
-        print(eintrag)
-
-# Konto schließen
-def konto_schliessen(bank):
-    print("Konto schließen:")
-    konto_id = int(input("Kontonummer: "))
-    try:
-        if bank.Konto_schliessen(konto_id):
-            print(f"Konto {konto_id} wurde erfolgreich geschlossen.")
-        else:
-            print(f"Konto {konto_id} konnte nicht geschlossen werden.")
-    except ValueError as e:
-        print(f"Fehler: {e}")
-
-# Hauptmenü
 def menu(bank):
     while True:
         print("\n--- Bank Menü ---")
@@ -107,31 +12,97 @@ def menu(bank):
         print("7. Konto schließen")
         print("8. Beenden")
 
-        auswahl = input("Wählen Sie eine Option: ")
+        option = input("Wählen Sie eine Option: ")
 
-        if auswahl == "1":
-            konto_eröffnen(bank)
-        elif auswahl == "2":
+        if option == "1":
+            konto_eroeffnen(bank)
+        elif option == "2":
             bareinzahlung(bank)
-        elif auswahl == "3":
+        elif option == "3":
             buchung(bank)
-        elif auswahl == "4":
+        elif option == "4":
             kontostand_abfragen(bank)
-        elif auswahl == "5":
-            buchungsjournal_abfragen(bank)
-        elif auswahl == "6":
-            bankjournal_abfragen(bank)
-        elif auswahl == "7":
+        elif option == "5":
+            letzte_buchungen_konto_abfragen(bank)
+        elif option == "6":
+            letzte_buchungen_bank_abfragen(bank)
+        elif option == "7":
             konto_schliessen(bank)
-        elif auswahl == "8":
-            print("Programm beendet.")
+        elif option == "8":
             break
         else:
-            print("Ungültige Auswahl. Bitte versuchen Sie es erneut.")
+            print("Ungültige Auswahl. Bitte erneut versuchen.")
+
+def konto_eroeffnen(bank):
+    print("\nKonto eröffnen:")
+    vorname = input("Vorname: ")
+    nachname = input("Nachname: ")
+    geburtsdatum = input("Geburtsdatum (DD.MM.YYYY): ")
+    kontotyp = input("Kontotyp (Privatkonto, Jugendkonto, Sparkonto): ")
+
+    if kontotyp == "Jugendkonto":
+        konto = bank.Konto_eröffnen(Jugendkonto, vorname, nachname, geburtsdatum)
+    elif kontotyp == "Privatkonto":
+        konto = bank.Konto_eröffnen(Privatkonto, vorname, nachname, geburtsdatum)
+    elif kontotyp == "Sparkonto":
+        konto = bank.Konto_eröffnen(Sparkonto, vorname, nachname, geburtsdatum)
+    else:
+        print("Ungültiger Kontotyp.")
+        return
+
+    print(f"Konto mit der Nummer {konto.get_Konto_ID()} erfolgreich eröffnet!")
+
+def bareinzahlung(bank):
+    print("\nBareinzahlung:")
+    kontonummer = int(input("Kontonummer: "))
+    betrag = float(input("Einzahlungsbetrag: "))
+    konto = bank.get_konto_info(kontonummer)
+    konto.Bareinzahlung(betrag)
+    print(f"{betrag} erfolgreich eingezahlt.")
+
+def buchung(bank):
+    print("\nBuchung von einem Konto zu einem anderen:")
+    start_konto_id = int(input("Start-Kontonummer: "))
+    ziel_konto_id = int(input("Ziel-Kontonummer: "))
+    betrag = float(input("Betrag: "))
+    zweck = input("Verwendungszweck (optional): ")
+    bank.Buchung(start_konto_id, ziel_konto_id, betrag, zweck)
+    print(f"Buchung von {betrag} von Konto {start_konto_id} zu Konto {ziel_konto_id} erfolgreich.")
+
+def kontostand_abfragen(bank):
+    kontonummer = int(input("\nKontonummer: "))
+    konto = bank.get_konto_info(kontonummer)
+    print(f"Kontostand: {konto.get_saldo()} EUR")
+
+def letzte_buchungen_konto_abfragen(bank):
+    kontonummer = int(input("\nKontonummer: "))
+    konto = bank.get_konto_info(kontonummer)
+    max_eintraege = input("Maximale Anzahl von Buchungen (optional): ")
+    max_eintraege = int(max_eintraege) if max_eintraege else None
+    buchungen = konto.get_journal(max_eintraege)
+    print("Letzte Buchungen:")
+    for buchung in buchungen:
+        print(buchung)
+
+def letzte_buchungen_bank_abfragen(bank):
+    max_eintraege = input("\nMaximale Anzahl von Buchungen (optional): ")
+    max_eintraege = int(max_eintraege) if max_eintraege else None
+    buchungen = bank.get_Bankjournal(max_eintraege)
+    print("Letzte Buchungen der Bank:")
+    for buchung in buchungen:
+        print(buchung)
+
+def konto_schliessen(bank):
+    kontonummer = int(input("\nKontonummer zum Schließen: "))
+    if bank.Konto_schliessen(kontonummer):
+        print(f"Konto {kontonummer} erfolgreich geschlossen.")
+    else:
+        print("Fehler beim Schließen des Kontos.")
+
 
 if __name__ == "__main__":
-    # Eine Bankinstanz erstellen
+    # Erstelle die Bankinstanz
     bank = Bank()
 
-    # Benutzeroberfläche starten
+    # Starte das Menü
     menu(bank)

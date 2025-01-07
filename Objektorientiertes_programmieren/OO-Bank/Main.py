@@ -10,7 +10,7 @@ class Bank:
 
         # Bank hat ein eigenes Konto (z.B. für Gebühren oder interne Buchungen)
         self.bank_konto = Bankkonto(konto_id=0, inhaber="Bank")
-        self.__konto_id=0
+        self.__konto_id = 0
         self.__konten[self.__konto_id] = self.bank_konto
         print("Bankkonto erstellt.")
 
@@ -24,15 +24,14 @@ class Bank:
         else:
             return self.__KundenID[Kunde]
 
-    def Konto_eröffnen(self, Kontotyp, Vorname, Nachname, geburtsdatum, limit = None):
+    def Konto_eröffnen(self, Kontotyp, Vorname, Nachname, geburtsdatum, limit=None):
         Kunden_ID = self.erstelle_entnehme_KundenID(Vorname, Nachname, geburtsdatum)
         if Kunden_ID not in self.__konten:
-            self.__konten[Kunden_ID] = []
+            self.__konten[Kunden_ID] = []  # Initialisiere als Liste
         konto_nummer = self.__next_kontonummer
         self.__next_kontonummer += 1
-        Kontotyp(konto_nummer, Vorname, Nachname, geburtsdatum, limit)
         konto = Kontotyp(konto_nummer, Vorname, Nachname, geburtsdatum, limit)
-        self.__konten[Kunden_ID].append(konto)
+        self.__konten[Kunden_ID].append(konto)  # Konto zur Liste hinzufügen
         return konto
 
     def Buchung(self, start_konto_id, ziel_konto_id, betrag, zweck):
@@ -58,9 +57,9 @@ class Bank:
     def get_konto_info(self, kontonummer):
         # Iteriere durch alle Kunden und deren Konten
         for Kunden_ID, konten in self.__konten.items():
-            # Wenn es nur ein einzelnes Konto gibt, dann kann es direkt ohne Schleife gefunden werden
+            # Wenn nur ein Konto vorhanden ist, überprüfen wir dieses direkt
             for konto in konten:
-                if konto.get_Konto_ID() == kontonummer:  # Überprüfung der Konto-ID
+                if konto.get_Konto_ID() == kontonummer:
                     return konto
         raise ValueError(f"Konto mit der Nummer {kontonummer} nicht gefunden")
 
@@ -127,8 +126,7 @@ class Konto:
 
 class Jugendkonto(Konto):
     def __init__(self, Konto_ID, Vorname, Nachname, geburtsdatum, limit):
-        super().__init__(Konto_ID, Vorname, Nachname, geburtsdatum, limit)#greift auf Elternklasse (Konto) zu
-
+        super().__init__(Konto_ID, Vorname, Nachname, geburtsdatum, limit)  # greift auf Elternklasse (Konto) zu
 
     def buchen(self, betrag, zu=None, zweck="Bareinzahlung"):
         if self.get_saldo() + betrag < 0:
@@ -138,34 +136,32 @@ class Jugendkonto(Konto):
 
 class Privatkonto(Konto):
     def __init__(self, Konto_ID, Vorname, Nachname, geburtsdatum, limit):
-        super().__init__(Konto_ID, Vorname, Nachname, geburtsdatum, limit)#greift auf Elternklasse (Konto) zu
+        super().__init__(Konto_ID, Vorname, Nachname, geburtsdatum, limit)  # greift auf Elternklasse (Konto) zu
 
-
-    def buchen(self,betrag, zu=None, zweck = "Bareinzahlung" ):
+    def buchen(self, betrag, zu=None, zweck="Bareinzahlung"):
         if self.get_saldo() + betrag < 0 - self.limit:
-            raise ValueError("Das Jugendkonto darf nicht ins Minus gehen!")
+            raise ValueError("Das Privatkonto darf nicht ins Minus gehen!")
         if betrag < 0:
             Bankgebühr = betrag * 0.05
-            Bank.Buchung(start_konto_id=self.__Konto_ID, ziel_konto_id= 0, betrag=Bankgebühr, zweck="Bankgebühr")
+            Bank.Buchung(start_konto_id=self.__Konto_ID, ziel_konto_id=0, betrag=Bankgebühr, zweck="Bankgebühr")
         else:
             super().buchen(betrag, zu, zweck)
 
 
 class Sparkonto(Konto):
-
     def __init__(self, Konto_ID, Vorname, Nachname, geburtsdatum, limit):
-        super().__init__(Konto_ID, Vorname, Nachname, geburtsdatum, limit)#greift auf Elternklasse (Konto) zu
+        super().__init__(Konto_ID, Vorname, Nachname, geburtsdatum, limit)  # greift auf Elternklasse (Konto) zu
 
-    def buchen(self, betrag, zu=None, zweck = "Bareinzahlung"):
+    def buchen(self, betrag, zu=None, zweck="Bareinzahlung"):
         if self.get_saldo() + betrag < 0:
-            raise ValueError("Das Jugendkonto darf nicht ins Minus gehen!")
+            raise ValueError("Das Sparkonto darf nicht ins Minus gehen!")
         super().buchen(betrag, zu, zweck)
-
 
     def Zinsen(self):
         Zinssatz = 0.0025
         zinsen_betrag = self.get_saldo() * Zinssatz
         Bank.Buchung(start_konto_id=self.__Konto_ID, ziel_konto_id=0, betrag=zinsen_betrag, zweck="Zinsen")
+
 
 class Bankkonto(Konto):
     def __init__(self, konto_id, inhaber):
