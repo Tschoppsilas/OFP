@@ -1,16 +1,15 @@
-def fibonacci_rec_2(n: int, cnt=0) -> (int, int):
-    def fibonacci(n: int, cnt) -> (int, int):
-        if n <= 1:
-            cnt+=1
-            return n, cnt
-        else:
-            fib1, cnt1 = fibonacci(n - 1, cnt)
-            fib2, cnt2 = fibonacci(n - 2, cnt1)
-            return fib1 + fib2, cnt2 + 1
+def fibonacci(n: int) -> int:
+    cnt = 0
+    def fibonacci_rec(cnt: int, n:int) -> [int, int]:
+        cnt+=1
 
-    result, cnt = fibonacci(n, cnt)
-    return (result, cnt)
+        if n <= 1: #Sicherheit, dass n nicht unter 1 geht, da es nur von pos Zahlen berechnet wird
+            return n,cnt
+        fibo2, cnt2 = fibonacci_rec(cnt, n - 2) #berrechnugn der kleineren
+        fibo1, cnt = fibonacci_rec(cnt, n - 1)  # berechnen der grösseren fibonacci Zahl
+        return fibo1 + fibo2, cnt2
+    return fibonacci_rec(cnt,n)
 
 
-print(fibonacci_rec_2(10))
-print(fibonacci_rec_2(10))
+print(fibonacci(10))
+print(fibonacci(10))
